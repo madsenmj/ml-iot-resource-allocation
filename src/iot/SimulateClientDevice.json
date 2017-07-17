@@ -1,0 +1,353 @@
+[
+    {
+        "id": "6208abe4.5e3ab4",
+        "type": "file in",
+        "z": "58b2af6d.0aaeb",
+        "name": "Read Test File",
+        "filename": "test_ratings_v2.csv",
+        "format": "utf8",
+        "x": 504.71429443359375,
+        "y": 270.4285888671875,
+        "wires": [
+            [
+                "91c8248.feaefd8"
+            ]
+        ]
+    },
+    {
+        "id": "91c8248.feaefd8",
+        "type": "csv",
+        "z": "58b2af6d.0aaeb",
+        "name": "",
+        "sep": ",",
+        "hdrin": true,
+        "hdrout": "",
+        "multi": "mult",
+        "ret": "\\n",
+        "temp": "",
+        "x": 509.71429443359375,
+        "y": 322.4285888671875,
+        "wires": [
+            [
+                "5fc10a41.b0d954"
+            ]
+        ]
+    },
+    {
+        "id": "baf0ee4c.be117",
+        "type": "inject",
+        "z": "58b2af6d.0aaeb",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 307.28570556640625,
+        "y": 271.14288330078125,
+        "wires": [
+            [
+                "6208abe4.5e3ab4"
+            ]
+        ]
+    },
+    {
+        "id": "5fc10a41.b0d954",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Select Interaction",
+        "func": "var _ = global.get('uscore');\nvar jStat = global.get('jstat').jStat;\n\n// The full list of sample interactions\nvar interactions = msg.payload;\n\n// Pick a single interaction to work with\nvar random_sample = Math.floor(Math.random()*interactions.length/5);\n\nfunction findByMatchingProperties(set, properties) {\n    return set.filter(function (entry) {\n        return Object.keys(properties).every(function (key) {\n            return entry[key] === properties[key];\n        });\n    });\n}\n\nvar results = findByMatchingProperties(interactions, { interactionID: random_sample });\n\nvar msg2 = {payload: {interactionID:random_sample}};\n\nmsg.payload = results;\n\nvar random_run = Math.floor(Math.random()*results.length);\n\nvar msg3 = {payload: results[random_run]};\nmsg3.topic = \"conditions\";\n\nreturn [msg,msg2,msg3];",
+        "outputs": "3",
+        "noerr": 0,
+        "x": 504.71429443359375,
+        "y": 384.4285888671875,
+        "wires": [
+            [
+                "6d939146.7a7f7"
+            ],
+            [
+                "29e08180.57334e"
+            ],
+            [
+                "ed9ba345.845c2",
+                "44e95e7.1ff29a"
+            ]
+        ]
+    },
+    {
+        "id": "6d939146.7a7f7",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Split Array Into Messages",
+        "func": "msg.payload.forEach(function(element) {\n    node.send({\"payload\": element});\n});\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 779.5714721679688,
+        "y": 309.14288330078125,
+        "wires": [
+            [
+                "a292280b.a24808"
+            ]
+        ]
+    },
+    {
+        "id": "ed9ba345.845c2",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Get Condition Array",
+        "func": "var _ = global.get('uscore');\nvar jStat = global.get('jstat').jStat;\n\nvar interaction = msg.payload;\n\nvar condarray = _.map(interaction, function(value, index) {\n    if (index.includes(\"Cond_\")){\n        return value;\n    }\n});\n\ncondarray = condarray.slice(4,24)\n\nmsg.payload = condarray;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 816.28564453125,
+        "y": 477.14288330078125,
+        "wires": [
+            [
+                "1db4033.fd308fd"
+            ]
+        ]
+    },
+    {
+        "id": "1db4033.fd308fd",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Update Condition Status",
+        "func": "var _ = global.get('uscore');\nvar jStat = global.get('jstat').jStat;\n\n\nvar conditions = _.map(msg.payload, function(num){ return num * (1 + jStat.normal.sample( 0, 0.01 ) ); })\n\nmsg.payload = conditions;\n\nreturn [msg,msg];",
+        "outputs": "2",
+        "noerr": 0,
+        "x": 1062.7141723632812,
+        "y": 479.14288330078125,
+        "wires": [
+            [
+                "75638c7c.59de64"
+            ],
+            [
+                "383b33ba.3d115c"
+            ]
+        ]
+    },
+    {
+        "id": "383b33ba.3d115c",
+        "type": "delay",
+        "z": "58b2af6d.0aaeb",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "10",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 1073.7141723632812,
+        "y": 554.1428833007812,
+        "wires": [
+            [
+                "1db4033.fd308fd"
+            ]
+        ]
+    },
+    {
+        "id": "75638c7c.59de64",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Parse Conditions for Chart",
+        "func": "\nvar currentconditions = msg.payload;\n\nfor (i = 0; i < currentconditions.length; i++) { \n    if (currentconditions[i] > 0){\n        node.send({topic: 'Cond_' + i,\n            payload:currentconditions[i]});\n    }\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1362.5712051391602,
+        "y": 479.14286613464355,
+        "wires": [
+            [
+                "c57aef27.788fd"
+            ]
+        ]
+    },
+    {
+        "id": "c57aef27.788fd",
+        "type": "ui_chart",
+        "z": "58b2af6d.0aaeb",
+        "name": "",
+        "group": "16799d05.40a343",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "label": "Condition Monitor",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "10",
+        "removeOlderPoints": "60",
+        "removeOlderUnit": "60",
+        "cutout": 0,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "x": 1366.9999542236328,
+        "y": 545.7142724990845,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "31d7896d.198bd6",
+        "type": "comment",
+        "z": "58b2af6d.0aaeb",
+        "name": "Simulated Target Monitor",
+        "info": "This block simulates the target conditions moving in time.",
+        "x": 1063.857177734375,
+        "y": 435.4285583496094,
+        "wires": []
+    },
+    {
+        "id": "422163a3.9495cc",
+        "type": "comment",
+        "z": "58b2af6d.0aaeb",
+        "name": "Set up resources for interaction",
+        "info": "This block processes the available resources. It eventually will send out a note to the IoT hub notifying it of which resources are available.\n",
+        "x": 799.5714797973633,
+        "y": 262.5714387893677,
+        "wires": []
+    },
+    {
+        "id": "a292280b.a24808",
+        "type": "link out",
+        "z": "58b2af6d.0aaeb",
+        "name": "ActiveResources",
+        "links": [
+            "18ed7090.61424f"
+        ],
+        "x": 953.2857131958008,
+        "y": 310.0000123977661,
+        "wires": []
+    },
+    {
+        "id": "d39859f.04a11a8",
+        "type": "ui_button",
+        "z": "58b2af6d.0aaeb",
+        "name": "Start Alert",
+        "group": "16799d05.40a343",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Initiate Alert",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "{\"devicestatus\":\"alert\"}",
+        "payloadType": "json",
+        "topic": "alerts",
+        "x": 606,
+        "y": 697,
+        "wires": [
+            [
+                "44e95e7.1ff29a"
+            ]
+        ]
+    },
+    {
+        "id": "ca9ed0c7.7534f",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Device Twin Manager",
+        "func": "var Client = global.get('azuredevice').Client;\nvar Protocol = global.get('azuremqtt').Mqtt;\n\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\n\nvar connectionString = nconf.get(\"client00_connection_string\");\n\n\nvar client = Client.fromConnectionString(connectionString, Protocol);\n\nvar initChange = function(twin){\n    \n    var patch = {devicestatus: twin.properties.desired.devicestatus,\n                statusChange: twin.properties.desired.statusChange,\n                alertInformation: twin.properties.desired.alertInformation\n                };\n    \n    twin.properties.reported.update(patch, function(err) {\n        if (err) {\n            node.error('could not update twin');\n        } else {\n            node.send({payload: 'Twin state update finished.'});\n        }\n        \n    });\n}\n\n\nclient.open(function(err) {\n    if (err) {\n        node.error('could not open IotHub client');\n    } else {\n        client.getTwin(function(err, twin) {\n            if (err) {\n                node.error('could not get twin');\n            } else {\n                var update = msg.payload;\n                update.statusChange = new Date().toISOString();\n                var patch = update;\n    \n                twin.properties.reported.update(patch, function(err) {\n                    if (err) {\n                        node.error('could not update twin');\n                    } else {\n                        node.send({payload: 'Twin state reported.'});\n                     \n                    }\n                });\n                \n                \n                twin.on('properties.desired', function(desiredChange) {\n                    node.send({payload: \"Change Reported from Hub.\"});\n                    if (desiredChange && (Date.parse(twin.properties.desired.statusChange) > Date.parse(twin.properties.reported.statusChange) )) {\n\t\t\t\t\t\tnode.send({payload: \"Device Status changing to: \" + desiredChange.devicestatus});\n                        setTimeout(function() {initChange(twin);}, 10000);\n                    }\n                });\n            }   \n        });\n    }\n});",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1161.500015258789,
+        "y": 695.2500095367432,
+        "wires": [
+            [
+                "8e2f7614.86d1d8",
+                "54584662.194e08"
+            ]
+        ]
+    },
+    {
+        "id": "44e95e7.1ff29a",
+        "type": "function",
+        "z": "58b2af6d.0aaeb",
+        "name": "Prep IoT Twin Condition Update",
+        "func": "\nvar condition = context.get('condition')||0;\n\nif (msg.topic == \"conditions\"){\n    condition = msg.payload;\n    delete condition.resourceID;\n    delete condition.rating;\n    //node.warn('Starting Condition: ' + JSON.stringify(condition));\n    context.set('condition',condition);\n    msg.payload = {\"devicestatus\":\"normal\"};\n} \nvar conditionClone =  JSON.parse(JSON.stringify(condition));\nmsg.payload.targetID = conditionClone.targetID;\nmsg.payload.interactionID = conditionClone.interactionID;\n\ndelete conditionClone.interactionID;\ndelete conditionClone.targetID;\n\nif (msg.topic == \"alerts\"){\n    msg.payload = {\"devicestatus\":\"alert\"};\n    msg.payload.alertInformation = {alertTargetID: condition.targetID,\n                                    alertCondition: conditionClone};\n}\n\nmsg.payload.deviceCondition = conditionClone;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 899,
+        "y": 695,
+        "wires": [
+            [
+                "ca9ed0c7.7534f"
+            ]
+        ]
+    },
+    {
+        "id": "54584662.194e08",
+        "type": "ui_text",
+        "z": "58b2af6d.0aaeb",
+        "group": "16799d05.40a343",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "text",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1370.7500190734863,
+        "y": 783.2500114440918,
+        "wires": []
+    },
+    {
+        "id": "29e08180.57334e",
+        "type": "debug",
+        "z": "58b2af6d.0aaeb",
+        "name": "InteractionID",
+        "active": true,
+        "console": "false",
+        "complete": "payload",
+        "x": 748.5,
+        "y": 397,
+        "wires": []
+    },
+    {
+        "id": "8e2f7614.86d1d8",
+        "type": "debug",
+        "z": "58b2af6d.0aaeb",
+        "name": "Device Twin Monitor",
+        "active": true,
+        "console": "false",
+        "complete": "payload",
+        "x": 1405.6250228881836,
+        "y": 695.0000095367432,
+        "wires": []
+    },
+    {
+        "id": "16799d05.40a343",
+        "type": "ui_group",
+        "z": "",
+        "name": "Client Monitor",
+        "tab": "a5616f98.e48dd",
+        "disp": true,
+        "width": "6"
+    },
+    {
+        "id": "a5616f98.e48dd",
+        "type": "ui_tab",
+        "z": "",
+        "name": "Active",
+        "icon": "dashboard"
+    }
+]

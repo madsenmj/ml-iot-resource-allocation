@@ -1,0 +1,293 @@
+[
+    {
+        "id": "e33e9ef1.e8bb5",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Add Client Tags",
+        "func": "var iothub = global.get('azureiothub');\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\n\nvar registry = iothub.Registry.fromConnectionString(connectionString);\n\nvar device = msg.payload.deviceID;\n\nregistry.getTwin(device, function(err, twin){\n if (err) {\n     node.error(err.constructor.name + ': ' + err.message);\n } else {\n     var patch = {\n         tags: {\n             deviceType: 'client' \n         }\n     };\n\n     twin.update(patch, function(err) {\n       if (err) {\n         node.error('Could not update twin: ' + err.constructor.name + ': ' + err.message);\n       } else {\n         node.log(twin.deviceId + ' twin updated successfully');\n       }\n     });\n }\n});\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 410,
+        "y": 410,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6372114d.b1e7e",
+        "type": "inject",
+        "z": "f7d4780.fd35388",
+        "name": "Start Tag Update",
+        "topic": "",
+        "payload": "{\"deviceID\":\"client00\"}",
+        "payloadType": "json",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 190,
+        "y": 410,
+        "wires": [
+            [
+                "e33e9ef1.e8bb5"
+            ]
+        ]
+    },
+    {
+        "id": "f87f2b0e.77fd58",
+        "type": "comment",
+        "z": "f7d4780.fd35388",
+        "name": "Admin: set client deviceIDs to have a \"deviceType\" tag of \"client\"",
+        "info": "",
+        "x": 285,
+        "y": 372,
+        "wires": []
+    },
+    {
+        "id": "5f3901d1.c1233",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Decomission Resources",
+        "func": "var nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar deviceArray = nconf.get(\"resources\");\n\nfor(i=0; i<deviceArray.length; i++){\n    deviceArray[i].deviceData = {resourceID: \"\",\n                                    devicestatus: \"disabled\"};\n    node.send({payload:deviceArray[i]});\n}\n\nnconf.set(\"resources\", deviceArray);\nnconf.save()\n\nreturn [null,msg];",
+        "outputs": "2",
+        "noerr": 0,
+        "x": 435,
+        "y": 150,
+        "wires": [
+            [
+                "19c51.f91413af"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "19c51.f91413af",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "SetDeviceTwinStatus",
+        "func": " \nvar Client = global.get('azuredevice').Client;\nvar Protocol = global.get('azuremqtt').Mqtt;\n\nvar connectionString = msg.payload.connectionstring;\nvar client = Client.fromConnectionString(connectionString, Protocol);\n\n\nclient.open(function(err) {\nif (err) {\n node.error('could not open IotHub client');\n}  else {\n //node.warn('client opened');\n\n client.getTwin(function(err, twin) {\n if (err) {\n     node.error('could not get twin');\n } else {\n     var patch = msg.payload.deviceData;\n\n     twin.properties.reported.update(patch, function(err) {\n         if (err) {\n             node.error('could not update twin');\n         } else {\n             node.warn('twin state reported');\n             \n         }\n     });\n }\n });\n}\n});",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 690.857177734375,
+        "y": 153.28570556640625,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9a5aefce.fd2f1",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Add Tags",
+        "func": "var iothub = global.get('azureiothub');\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\n\nvar registry = iothub.Registry.fromConnectionString(connectionString);\n\nvar device = msg.payload.deviceID;\n\nregistry.getTwin(device, function(err, twin){\n if (err) {\n     node.error(err.constructor.name + ': ' + err.message);\n } else {\n     var patch = {\n         tags: {\n             deviceType: 'resource' \n         }\n     };\n\n     twin.update(patch, function(err) {\n       if (err) {\n         node.error('Could not update twin: ' + err.constructor.name + ': ' + err.message);\n       } else {\n         node.log(twin.deviceId + ' twin updated successfully');\n       }\n     });\n }\n});\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 507.5714111328125,
+        "y": 501.71429443359375,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "22030771.e1fb48",
+        "type": "inject",
+        "z": "f7d4780.fd35388",
+        "name": "Start Tag Update",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 153.5714111328125,
+        "y": 503.71429443359375,
+        "wires": [
+            [
+                "213eb948.8e37c6"
+            ]
+        ]
+    },
+    {
+        "id": "213eb948.8e37c6",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Get DeviceIDs",
+        "func": "var nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar deviceArray = nconf.get(\"resources\");\n\nfor(i=0; i<deviceArray.length; i++){\n    node.send({payload: {deviceID:deviceArray[i].deviceID}});\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 344.5714111328125,
+        "y": 503.71429443359375,
+        "wires": [
+            [
+                "9a5aefce.fd2f1"
+            ]
+        ]
+    },
+    {
+        "id": "d16dcc56.01d08",
+        "type": "comment",
+        "z": "f7d4780.fd35388",
+        "name": "Admin: set resource deviceIDs to have a \"deviceType\" tag of \"resource\"",
+        "info": "",
+        "x": 313.5714111328125,
+        "y": 463.71429443359375,
+        "wires": []
+    },
+    {
+        "id": "5357b4f2.19968c",
+        "type": "inject",
+        "z": "f7d4780.fd35388",
+        "name": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 128,
+        "y": 609,
+        "wires": [
+            [
+                "88f75e3.4dd90a"
+            ]
+        ]
+    },
+    {
+        "id": "88f75e3.4dd90a",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Get Active Resources",
+        "func": "var iothub = global.get('azureiothub');\n\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\nvar registry = iothub.Registry.fromConnectionString(connectionString);\n\nvar query = registry.createQuery(\"SELECT * FROM devices WHERE tags.deviceType='resource' AND properties.reported.devicestatus='active'\", 100);\n//var query = registry.createQuery(\"SELECT * FROM devices WHERE properties.reported.cardProperties.CardID='08b44343-6beb-4c24-997a-ee20c4e8ed06'\", 100);\n\nquery.nextAsTwin(function(err, results) {\n    if (err) {\n        console.error('Failed to fetch the results: ' + err.message);\n    } else {\n        console.log();\n\t\tconsole.log(\"Found N devices: \" + results.length);\n        results.forEach(function(twin) {\n\t\t\tvar deviceStatus = twin.properties.reported.devicestatus;\n            node.warn(\"Resource: \" + twin.deviceId + ' is: ' + deviceStatus);\n            \n        });\n    }\n});\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 373,
+        "y": 610,
+        "wires": [
+            [
+                "4d4b72b.03cea8c"
+            ]
+        ]
+    },
+    {
+        "id": "4d4b72b.03cea8c",
+        "type": "debug",
+        "z": "f7d4780.fd35388",
+        "name": "",
+        "active": true,
+        "console": "false",
+        "complete": "false",
+        "x": 590,
+        "y": 615,
+        "wires": []
+    },
+    {
+        "id": "49dff565.c677fc",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "get partitions",
+        "func": "var EventHubClient = global.get('azureeventhubs').Client;\n\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\nvar client = EventHubClient.fromConnectionString(connectionString, '');\n\nclient.open()\n    .then(function() {\n        return client.getPartitionIds()\n    })\n    .then(function(ids) {\n        ids.forEach(function(id) { node.warn({payload: id}); });\n    });",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 327,
+        "y": 708,
+        "wires": [
+            [
+                "ba711f05.2cca3"
+            ]
+        ]
+    },
+    {
+        "id": "7b302b9a.391ad4",
+        "type": "inject",
+        "z": "f7d4780.fd35388",
+        "name": "Manual Inject",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 159,
+        "y": 708,
+        "wires": [
+            [
+                "49dff565.c677fc"
+            ]
+        ]
+    },
+    {
+        "id": "ba711f05.2cca3",
+        "type": "debug",
+        "z": "f7d4780.fd35388",
+        "name": "",
+        "active": true,
+        "console": "false",
+        "complete": "true",
+        "x": 489,
+        "y": 709,
+        "wires": []
+    },
+    {
+        "id": "5b3a0831.643328",
+        "type": "comment",
+        "z": "f7d4780.fd35388",
+        "name": "Check Partitions if necessary",
+        "info": "",
+        "x": 189,
+        "y": 663,
+        "wires": []
+    },
+    {
+        "id": "c1d68c77.2283c",
+        "type": "comment",
+        "z": "f7d4780.fd35388",
+        "name": "Return a list of all the active resources",
+        "info": "",
+        "x": 218.5,
+        "y": 568,
+        "wires": []
+    },
+    {
+        "id": "ae762251.2104b",
+        "type": "function",
+        "z": "f7d4780.fd35388",
+        "name": "Send Normal Patch",
+        "func": "var iothub = global.get('azureiothub');\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\nvar registry = iothub.Registry.fromConnectionString(connectionString);\n\nregistry.getTwin('client00', function(err, twin){\n    if (err) {\n        node.error(err.constructor.name + ': ' + err.message);\n    } else {\n        var patch = {\n            properties: {\n                desired: {\n                    devicestatus:\"normal\",\n                    statusChange: new Date().toISOString(),\n                    alertInformation: \"\"\n                    }\n            }\n        }\n        twin.update(patch, function(err) {\n            if (err) {\n                node.error('Could not update twin: ' + err.constructor.name + ': ' + err.message);\n            } else {\n                node.warn(twin.deviceId + ' twin update request sent.');\n            }\n        });\n    }\n});",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 419,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3ffa8829.5f3368",
+        "type": "inject",
+        "z": "f7d4780.fd35388",
+        "name": "Manual reset to normal",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 176,
+        "y": 100,
+        "wires": [
+            [
+                "ae762251.2104b",
+                "5f3901d1.c1233"
+            ]
+        ]
+    },
+    {
+        "id": "60e2abdf.a68fa4",
+        "type": "comment",
+        "z": "f7d4780.fd35388",
+        "name": "Reset All Devices To Init",
+        "info": "",
+        "x": 187,
+        "y": 63,
+        "wires": []
+    }
+]

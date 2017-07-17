@@ -1,0 +1,205 @@
+[
+    {
+        "id": "9b2c0822.845178",
+        "type": "http request",
+        "z": "bb510090.b7b84",
+        "name": "post to Azure ML Endpoint",
+        "method": "POST",
+        "ret": "txt",
+        "url": "https://ussouthcentral.services.azureml.net/workspaces/0ac12bf0e12c4cdeaf089795fd23ffe0/services/525b000b3a9b4c8cb86d54fcd312935e/execute?api-version=2.0&format=swagger",
+        "tls": "",
+        "x": 704.6666870117188,
+        "y": 421.33331298828125,
+        "wires": [
+            [
+                "303a5de0.889682"
+            ]
+        ]
+    },
+    {
+        "id": "9e93ab5a.c1f7e8",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "set payload and headers",
+        "func": "var nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar api_key = nconf.get(\"api_key\");\n\nmsg.headers = {};\nmsg.headers['Authorization'] = 'Bearer '+api_key;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 673.0000305175781,
+        "y": 351.3333282470703,
+        "wires": [
+            [
+                "9b2c0822.845178"
+            ]
+        ]
+    },
+    {
+        "id": "f7808e77.f2699",
+        "type": "debug",
+        "z": "bb510090.b7b84",
+        "name": "ML Enpoint messages",
+        "active": true,
+        "console": "false",
+        "complete": "payload",
+        "x": 968.0000686645508,
+        "y": 510.3332939147949,
+        "wires": []
+    },
+    {
+        "id": "d1f10feb.9b1e9",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Set query Message",
+        "func": "var uuid = global.get('uuid');\n\nvar queryinput = msg.payload.alertCondition;\nqueryinput.queryID = uuid.v4();\nqueryinput.targetID = msg.payload.alertTargetID;\nqueryinput.resourceID = msg.payload.resourceID;\nvar newmsg = {\n    \"Inputs\": {\n        \"input1\": [queryinput]\n    },\n    \"GlobalParameters\": {}\n};\n\nmsg.payload = newmsg;\nmsg.topic = \"sendingQueries\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 383.5,
+        "y": 400,
+        "wires": [
+            [
+                "9e93ab5a.c1f7e8",
+                "9d5905cc.8d4058"
+            ]
+        ]
+    },
+    {
+        "id": "afce8cf0.33fe",
+        "type": "inject",
+        "z": "bb510090.b7b84",
+        "name": "Autorun",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "x": 65,
+        "y": 137,
+        "wires": [
+            [
+                "223e29dc.5bb9a6"
+            ]
+        ]
+    },
+    {
+        "id": "a3b2b8bd.807a98",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Send on Alert",
+        "func": "if (msg.payload.devicestatus == \"alert\"){\n    node.send({payload: \"Alert received. Contacting resource.\"})\n}\n\n\nreturn [null,msg];",
+        "outputs": "2",
+        "noerr": 0,
+        "x": 132,
+        "y": 264,
+        "wires": [
+            [],
+            [
+                "d67605c2.aa33a8"
+            ]
+        ]
+    },
+    {
+        "id": "223e29dc.5bb9a6",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Twin Change Listener",
+        "func": "\nvar EventHubClient = global.get('azureeventhubs').Client;\n\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\nvar endpoint = nconf.get(\"resource_group\");\n\nvar client = EventHubClient.fromConnectionString(connectionString, '');\nclient.open()\n    .then(function() {\n        return client.createReceiver(endpoint, '0', { startAfterTime: Date.now() })\n    })\n    .then(function (rx) {\n        rx.on('errorReceived', function (err) { node.warn(err); }); \n        rx.on('message', function (message) {\n            \n            var lastChange = context.get('lastChange') || 0;\n            if (message.body.properties){\n                var body = message.body.properties.reported;\n                \n                var enqueuedTime = body.statusChange;\n                if (enqueuedTime != lastChange){\n                    //node.send({payload: {devicestatus: \"alert\"}});\n                    node.send({payload: body});\n                    context.set('lastChange',enqueuedTime);\n                }\n            }\n        });\n    });\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 248.5,
+        "y": 137,
+        "wires": [
+            [
+                "cadf9c9c.c5428"
+            ]
+        ]
+    },
+    {
+        "id": "cadf9c9c.c5428",
+        "type": "deduplicate",
+        "z": "bb510090.b7b84",
+        "name": "",
+        "expiry": 5,
+        "x": 440.5,
+        "y": 136,
+        "wires": [
+            [
+                "a3b2b8bd.807a98"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "d67605c2.aa33a8",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Get Active Resources",
+        "func": "var iothub = global.get('azureiothub');\n\nvar nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar connectionString = nconf.get(\"hubconnectionstring\");\n\nvar registry = iothub.Registry.fromConnectionString(connectionString);\n\nvar query = registry.createQuery(\"SELECT * FROM devices WHERE tags.deviceType='resource' AND properties.reported.devicestatus='active'\", 100);\n//var query = registry.createQuery(\"SELECT * FROM devices WHERE properties.reported.cardProperties.CardID='08b44343-6beb-4c24-997a-ee20c4e8ed06'\", 100);\n\nvar alertInformation = JSON.parse(JSON.stringify(msg.payload.alertInformation));\n\nquery.nextAsTwin(function(err, results) {\n    if (err) {\n        node.error('Failed to fetch the results: ' + err.message);\n    } else {\n\t\tnode.warn(\"Found \" + results.length + \" resources.\");\n        results.forEach(function(twin) {\n\t\t\tvar deviceStatus = twin.properties.reported.devicestatus;\n            //node.warn(\"Resource: \" + twin.deviceId + ' is: ' + deviceStatus);\n            msg.payload = alertInformation;\n            msg.payload.resourceDeviceID = twin.deviceId;\n            msg.payload.resourceID = twin.properties.reported.resourceID;\n            node.send(msg);\n        });\n    }\n});\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 155,
+        "y": 398,
+        "wires": [
+            [
+                "d1f10feb.9b1e9"
+            ]
+        ]
+    },
+    {
+        "id": "9d5905cc.8d4058",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Determine Best Resource",
+        "func": "\nvar queries = context.get(\"queryArray\") || [];\nvar queryTime = context.get(\"queryTime\") || new Date();\nvar replies = context.get(\"replyArray\") || [];\nvar topScore = context.get(\"topScore\") || -100;\nvar topReply = context.get(\"topReply\") || 0;\n\nif (msg.topic == \"sendingQueries\"){\n    if (queries.length === 0){\n        // This is our first query, set the timer for automatic timeout\n        queryTime = new Date();\n        context.set('queryTime',queryTime);\n    }\n    \n    // File the queries away while we wait for results\n    queries.push(msg.payload.Inputs.input1[0]);\n\n    context.set('queryArray',queries);\n} else if (msg.topic == \"response\"){\n    // We got results back from the ML endpoint\n    var result = JSON.parse(msg.payload);\n    for (i=0; i<queries.length; i++){\n        if (queries[i].queryID == result.Results.output1[0].queryID){\n            var mlreply = result.Results.output1[0];\n            mlreply.resourceID = queries[i].resourceID;\n            mlreply.targetID = queries[i].targetID;\n            \n            mlreply.total = Number(mlreply['Prob-1'])*-1 + Number(mlreply['Prob+1']);\n            \n            // Adjust our best score so far\n            if (mlreply.total > topScore){\n                topScore = mlreply.total;\n                topReply = mlreply;\n                context.set('topScore',topScore);\n                context.set('topReply',topReply);\n            }\n            \n            //node.warn(\"We have a match\");\n            //node.warn(mlreply);\n            replies.push(result.Results.output1[0]);\n            context.set('replyArray',replies);\n            break;\n        }\n        \n    }\n    \n} else{\n    // We are waiting for a timeout on the messages\n    if(queries.length > 0){\n        if (queries.length != replies.length){\n            node.warn(\"Waiting for all messages.\");\n        } else{ \n            node.send({payload: topReply});\n            context.set('topScore',-100);\n            context.set('topReply',0);\n            context.set('queryArray',[]);\n            context.set('replyArray',[]);\n        }\n    }\n}\n\nmsg.topic = null;\n\nreturn [null, msg];",
+        "outputs": "2",
+        "noerr": 0,
+        "x": 701.1667175292969,
+        "y": 510.33332538604736,
+        "wires": [
+            [
+                "f7808e77.f2699"
+            ],
+            [
+                "ae505b0b.7f8348"
+            ]
+        ]
+    },
+    {
+        "id": "303a5de0.889682",
+        "type": "function",
+        "z": "bb510090.b7b84",
+        "name": "Update Topic",
+        "func": "msg.topic = \"response\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 303.5000686645508,
+        "y": 499.6666774749756,
+        "wires": [
+            [
+                "9d5905cc.8d4058"
+            ]
+        ]
+    },
+    {
+        "id": "ae505b0b.7f8348",
+        "type": "delay",
+        "z": "bb510090.b7b84",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 693.1667938232422,
+        "y": 570.6666688919067,
+        "wires": [
+            [
+                "9d5905cc.8d4058"
+            ]
+        ]
+    }
+]

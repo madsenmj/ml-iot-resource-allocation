@@ -1,0 +1,58 @@
+[
+    {
+        "id": "18ed7090.61424f",
+        "type": "link in",
+        "z": "1810b6a9.dc7749",
+        "name": "ActiveResources",
+        "links": [
+            "a292280b.a24808"
+        ],
+        "x": 207.85717391967773,
+        "y": 116.8571548461914,
+        "wires": [
+            [
+                "96c36dfb.26ab9"
+            ]
+        ]
+    },
+    {
+        "id": "96c36dfb.26ab9",
+        "type": "function",
+        "z": "1810b6a9.dc7749",
+        "name": "Prepare Azure Message",
+        "func": "var nconf = global.get('nconf');\nnconf.use('file', { file: 'resource_conf.json' });\nnconf.load();\n\nvar deviceArray = context.get('resources') || 0;\n\n// Pull devices from configuration file\nif (deviceArray === 0){\n    deviceArray = nconf.get(\"resources\");\n}\n\n// Get first device that isn't active\nfunction isDisabled(element) {\n  return element.deviceData.devicestatus == \"disabled\";\n}\nvar disabled_device = deviceArray.findIndex(isDisabled);\n\n// Update Array status\ndeviceArray[disabled_device].deviceData.resourceID = msg.payload.resourceID;\ndeviceArray[disabled_device].deviceData.devicestatus = \"active\";\n\nnconf.set(\"resources\", deviceArray);\n//node.warn(nconf);\n\nnconf.save()\n\nmsg.payload = deviceArray[disabled_device];\n\ncontext.set('deviceArray',deviceArray);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 382.5714552743093,
+        "y": 119.7142933436802,
+        "wires": [
+            [
+                "df1fbbd2.406d78"
+            ]
+        ]
+    },
+    {
+        "id": "26493d98.461f62",
+        "type": "comment",
+        "z": "1810b6a9.dc7749",
+        "name": "Reads JSON configuration files for changing device",
+        "info": "",
+        "x": 325.28575134277344,
+        "y": 77.42852783203125,
+        "wires": []
+    },
+    {
+        "id": "df1fbbd2.406d78",
+        "type": "function",
+        "z": "1810b6a9.dc7749",
+        "name": "SetDeviceTwinStatus",
+        "func": " \nvar Client = global.get('azuredevice').Client;\nvar Protocol = global.get('azuremqtt').Mqtt;\n\nvar connectionString = msg.payload.connectionstring;\nvar client = Client.fromConnectionString(connectionString, Protocol);\n\n\nclient.open(function(err) {\nif (err) {\n node.error('could not open IotHub client');\n}  else {\n //node.warn('client opened');\n\n client.getTwin(function(err, twin) {\n if (err) {\n     node.error('could not get twin');\n } else {\n     var patch = msg.payload.deviceData;\n\n     twin.properties.reported.update(patch, function(err) {\n         if (err) {\n             node.error('could not update twin');\n         } else {\n             //node.warn('twin state reported');\n             \n         }\n     });\n }\n });\n}\n});",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 637.571533203125,
+        "y": 120.00003814697266,
+        "wires": [
+            []
+        ]
+    }
+]
