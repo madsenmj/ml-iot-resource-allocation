@@ -1,7 +1,7 @@
 {
-  "hubconnectionstring": "HostName=werickiothub.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=lrHSYayCedPrDtS+0nLiPLgr3WKeJwqOw8HJ/UDnNoo=",
-  "client00_connection_string": "HostName=werickiothub.azure-devices.net;DeviceId=client00;SharedAccessKey=GVNjS2Xe6UTRDzuhuybuNmBtlqCw9PlKr9azEQFPiVo=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883",
-  "api_key": "Ev8v8//LyHG+tp8+5eM5FntTFIU2V9BrWpByM4yRi1JudnqO7N0FKU65A47SF8LuQYzhPrrBeA2ZOvC6DDFn2g==",
+  "hubconnectionstring": "<Azure hub connection string>",
+  "client00_connection_string": "<Azure device connection string>",
+  "api_key": "<event hup api key>",
   "resource_group": "resourceg10",
   "resources": [
     {
@@ -10,7 +10,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource00",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource00;SharedAccessKey=NbxaZGTdearbUfeE52edvhD/vQ6TBkQzxN3iKx0Zim0=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     },
     {
       "deviceData": {
@@ -18,7 +18,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource01",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource01;SharedAccessKey=oyShBYbb6kHOKfMrNTTzAiZSZmSSSg3BJMheUv7g3do=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     },
     {
       "deviceData": {
@@ -26,7 +26,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource02",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource02;SharedAccessKey=/AtJ6/zE955EwqUTeN3l6Td/tg6gAWYC0jWKYKOtkTQ=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     },
     {
       "deviceData": {
@@ -34,7 +34,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource03",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource03;SharedAccessKey=msAdfhqcUJBycamOuH189M4SZJUj69sZ0LmYBLfqZY8=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     },
     {
       "deviceData": {
@@ -42,7 +42,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource04",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource04;SharedAccessKey=y+Ra5+SMpavpU6L4RA9FvDrwhHhMcnvWrKyhVfGLBxg=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     },
     {
       "deviceData": {
@@ -50,7 +50,7 @@
         "devicestatus": "disabled"
       },
       "deviceID": "resource05",
-      "connectionstring": "HostName=werickiothub.azure-devices.net;DeviceId=resource05;SharedAccessKey=EcZOeqrAbhOKd7Q2WlelCasL3otimgNG0CXpdW9izcg=;GatewayHostName=ssl://werickiothub.azure-devices.net:8883"
+      "connectionstring": "<Azure device connection string>"
     }
   ]
 }
